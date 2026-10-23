@@ -1,3 +1,4 @@
+require('dotenv').config(); // Load .env variables
 const express = require('express');
 const app = express();
 app.use(express.json()); // Parse JSON bodies
@@ -12,8 +13,20 @@ app.get('/todos', (req, res) => {
   res.status(200).json(todos); // Send array as JSON
 });
 
+// GET Active – Filter incomplete todos
+app.get('/todos/active', (req, res) => {
+  res.status(200).json(todos.filter((todo) => !todo.completed));
+});
+
 // POST New – Create
 app.post('/todos', (req, res) => {
+  if (
+    !req.body ||
+    typeof req.body.task !== 'string' ||
+    req.body.task.trim() === ''
+  ) {
+    return res.status(400).json({ error: 'Task is required' });
+  }
   const newTodo = { id: todos.length + 1, ...req.body }; // Auto-ID
   todos.push(newTodo);
   res.status(201).json(newTodo); // Echo back
@@ -42,9 +55,18 @@ app.get('/todos/completed', (req, res) => {
   res.json(completed); // Custom Read!
 });
 
+// GET One – Read by ID
+app.get('/todos/:id', (req, res) => {
+  const todo = todos.find((t) => t.id === parseInt(req.params.id, 10));
+  if (!todo) return res.status(404).json({ message: 'Todo not found' });
+  res.status(200).json(todo);
+});
+
 app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Server error!' });
 });
 
-const PORT = 3002;
+const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => console.log(`Server on port ${PORT}`));
+
